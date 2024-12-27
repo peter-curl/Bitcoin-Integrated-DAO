@@ -72,3 +72,20 @@
         (>= block-height (get end-block proposal))
     ))
 )
+
+;; Public Functions
+
+;; Stake BTC (simulated with STX for testing)
+(define-public (stake (amount uint))
+    (let (
+        (current-stake (default-to u0 (map-get? user-stakes tx-sender)))
+        (new-stake (+ current-stake amount))
+    )
+    (begin
+        (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+        (try! (stx-transfer? amount tx-sender (as-contract tx-sender)))
+        (map-set user-stakes tx-sender new-stake)
+        (var-set total-staked (+ (var-get total-staked) amount))
+        (ok new-stake)
+    ))
+)
