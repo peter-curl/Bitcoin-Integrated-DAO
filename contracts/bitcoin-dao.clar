@@ -46,3 +46,29 @@
     {proposal-id: uint, voter: principal}
     {vote: bool, weight: uint}
 )
+
+;; Private Functions
+(define-private (is-proposal-active (proposal-id uint))
+    (let (
+        (proposal (unwrap! (map-get? proposals proposal-id) false))
+        (current-block block-height)
+    )
+    (and
+        (>= current-block (get start-block proposal))
+        (<= current-block (get end-block proposal))
+        (is-eq (get status proposal) "active")
+    ))
+)
+
+(define-private (can-execute-proposal (proposal-id uint))
+    (let (
+        (proposal (unwrap! (map-get? proposals proposal-id) false))
+        (total-votes (+ (get yes-votes proposal) (get no-votes proposal)))
+    )
+    (and
+        (>= total-votes (get min-votes-required proposal))
+        (> (get yes-votes proposal) (get no-votes proposal))
+        (not (get executed proposal))
+        (>= block-height (get end-block proposal))
+    ))
+)
