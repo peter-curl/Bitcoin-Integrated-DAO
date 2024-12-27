@@ -13,6 +13,8 @@
 (define-constant ERR-INSUFFICIENT-STAKE (err u105))
 (define-constant ERR-PROPOSAL-NOT-ACTIVE (err u106))
 (define-constant ERR-INVALID-STATE (err u107))
+(define-constant ERR-INVALID-TITLE (err u108))
+(define-constant ERR-INVALID-DESCRIPTION (err u109))
 
 ;; Data Variables
 (define-data-var min-proposal-stake uint u100000) ;; Minimum BTC stake required for proposal (in sats)
@@ -48,6 +50,20 @@
 )
 
 ;; Private Functions
+(define-private (validate-title (title (string-ascii 50)))
+    (and
+        (not (is-eq title ""))
+        (<= (len title) u50)
+    )
+)
+
+(define-private (validate-description (description (string-ascii 500)))
+    (and
+        (not (is-eq description ""))
+        (<= (len description) u500)
+    )
+)
+
 (define-private (is-proposal-active (proposal-id uint))
     (let (
         (proposal (unwrap! (map-get? proposals proposal-id) false))
@@ -99,6 +115,8 @@
         (end-block (+ block-height duration))
     )
     (begin
+        (asserts! (validate-title title) ERR-INVALID-TITLE)
+        (asserts! (validate-description description) ERR-INVALID-DESCRIPTION)
         (asserts! (>= user-stake (var-get min-proposal-stake)) ERR-INSUFFICIENT-STAKE)
         (asserts! (> duration u0) ERR-INVALID-AMOUNT)
         
@@ -132,8 +150,13 @@
         (asserts! (> user-stake u0) ERR-INSUFFICIENT-STAKE)
         (asserts! (is-none (map-get? votes vote-key)) ERR-ALREADY-VOTED)
         
-        (map-set votes vote-key {vote: vote-for, weight: user-stake})
+        ;; Record the vote with validated input
+        (map-set votes vote-key {
+            vote: vote-for,
+            weight: user-stake
+        })
         
+        ;; Update proposal vote counts
         (map-set proposals proposal-id 
             (merge proposal 
                 {
