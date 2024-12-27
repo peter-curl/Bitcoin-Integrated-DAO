@@ -149,3 +149,22 @@
         (ok true)
     ))
 )
+
+;; Execute a proposal
+(define-public (execute-proposal (proposal-id uint))
+    (let (
+        (proposal (unwrap! (map-get? proposals proposal-id) ERR-PROPOSAL-NOT-FOUND))
+    )
+    (begin
+        (asserts! (can-execute-proposal proposal-id) ERR-INVALID-STATE)
+        
+        ;; Update proposal status
+        (map-set proposals proposal-id 
+            (merge proposal {
+                status: "executed",
+                executed: true
+            })
+        )
+        (ok true)
+    ))
+)
