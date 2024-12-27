@@ -89,3 +89,33 @@
         (ok new-stake)
     ))
 )
+
+;; Create a new proposal
+(define-public (create-proposal (title (string-ascii 50)) (description (string-ascii 500)) (duration uint))
+    (let (
+        (user-stake (default-to u0 (map-get? user-stakes tx-sender)))
+        (proposal-id (+ (var-get proposal-count) u1))
+        (start-block block-height)
+        (end-block (+ block-height duration))
+    )
+    (begin
+        (asserts! (>= user-stake (var-get min-proposal-stake)) ERR-INSUFFICIENT-STAKE)
+        (asserts! (> duration u0) ERR-INVALID-AMOUNT)
+        
+        (map-set proposals proposal-id {
+            creator: tx-sender,
+            title: title,
+            description: description,
+            start-block: start-block,
+            end-block: end-block,
+            status: "active",
+            yes-votes: u0,
+            no-votes: u0,
+            executed: false,
+            min-votes-required: (/ (var-get total-staked) u10) ;; 10% quorum
+        })
+        
+        (var-set proposal-count proposal-id)
+        (ok proposal-id)
+    ))
+)
