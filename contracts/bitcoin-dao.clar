@@ -168,3 +168,30 @@
         (ok true)
     ))
 )
+
+;; Read-only functions
+
+;; Get proposal details
+(define-read-only (get-proposal (proposal-id uint))
+    (map-get? proposals proposal-id)
+)
+
+;; Get user stake
+(define-read-only (get-user-stake (user principal))
+    (default-to u0 (map-get? user-stakes user))
+)
+
+;; Get user vote for a specific proposal
+(define-read-only (get-user-vote (proposal-id uint) (user principal))
+    (map-get? votes {proposal-id: proposal-id, voter: user})
+)
+
+;; Get total staked amount
+(define-read-only (get-total-staked)
+    (var-get total-staked)
+)
+
+;; Check if a proposal can be executed
+(define-read-only (is-executable (proposal-id uint))
+    (can-execute-proposal proposal-id)
+)
