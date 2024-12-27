@@ -15,6 +15,7 @@
 (define-constant ERR-INVALID-STATE (err u107))
 (define-constant ERR-INVALID-TITLE (err u108))
 (define-constant ERR-INVALID-DESCRIPTION (err u109))
+(define-constant ERR-INVALID-VOTE (err u110))
 
 ;; Data Variables
 (define-data-var min-proposal-stake uint u100000) ;; Minimum BTC stake required for proposal (in sats)
@@ -62,6 +63,10 @@
         (not (is-eq description ""))
         (<= (len description) u500)
     )
+)
+
+(define-private (validate-vote (vote-value bool))
+    (or (is-eq vote-value true) (is-eq vote-value false))
 )
 
 (define-private (is-proposal-active (proposal-id uint))
@@ -144,13 +149,15 @@
         (user-stake (default-to u0 (map-get? user-stakes tx-sender)))
         (proposal (unwrap! (map-get? proposals proposal-id) ERR-PROPOSAL-NOT-FOUND))
         (vote-key {proposal-id: proposal-id, voter: tx-sender})
+        (validated-vote (validate-vote vote-for))  ;; Explicit validation
     )
     (begin
+        (asserts! validated-vote ERR-INVALID-VOTE)  ;; Assert valid vote
         (asserts! (is-proposal-active proposal-id) ERR-PROPOSAL-NOT-ACTIVE)
         (asserts! (> user-stake u0) ERR-INSUFFICIENT-STAKE)
         (asserts! (is-none (map-get? votes vote-key)) ERR-ALREADY-VOTED)
         
-        ;; Record the vote with validated input
+        ;; Record the validated vote
         (map-set votes vote-key {
             vote: vote-for,
             weight: user-stake
