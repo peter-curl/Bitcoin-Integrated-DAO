@@ -119,3 +119,33 @@
         (ok proposal-id)
     ))
 )
+
+;; Vote on a proposal
+(define-public (vote (proposal-id uint) (vote-for bool))
+    (let (
+        (user-stake (default-to u0 (map-get? user-stakes tx-sender)))
+        (proposal (unwrap! (map-get? proposals proposal-id) ERR-PROPOSAL-NOT-FOUND))
+        (vote-key {proposal-id: proposal-id, voter: tx-sender})
+    )
+    (begin
+        (asserts! (is-proposal-active proposal-id) ERR-PROPOSAL-NOT-ACTIVE)
+        (asserts! (> user-stake u0) ERR-INSUFFICIENT-STAKE)
+        (asserts! (is-none (map-get? votes vote-key)) ERR-ALREADY-VOTED)
+        
+        (map-set votes vote-key {vote: vote-for, weight: user-stake})
+        
+        (map-set proposals proposal-id 
+            (merge proposal 
+                {
+                    yes-votes: (if vote-for 
+                        (+ (get yes-votes proposal) user-stake)
+                        (get yes-votes proposal)),
+                    no-votes: (if vote-for 
+                        (get no-votes proposal)
+                        (+ (get no-votes proposal) user-stake))
+                }
+            )
+        )
+        (ok true)
+    ))
+)
